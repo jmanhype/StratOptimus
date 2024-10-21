@@ -1,0 +1,34 @@
+{
+    "Custom": {
+        "description": "Generates anything based on customized input and instruction.",
+        "interface": "custom(input: str, instruction: str) -> dict with key 'response' of type str"
+    },
+    "ScEnsemble": {
+        "description": "Uses self-consistency to select the solution that appears most frequently in the solution list, improving the selection to enhance the choice of the best solution.",
+        "interface": "sc_ensemble(solutions: List[str]) -> dict with key 'response' of type str"
+    },
+    "AnswerGenerate": {
+        "description": "Generates step-by-step thoughts based on the input. The step-by-step thought process is in the field of 'thought', and the final answer is in the field of 'answer'.",
+        "interface": "answer_generate(input: str) -> dict with key 'thought' of type str, 'answer' of type str"
+    },
+    "ParameterOptimizer": {
+        "description": "Optimizes trading strategy parameters based on historical performance data.",
+        "interface": "parameter_optimizer(current_parameters: Dict[str, Any]) -> dict with key 'optimized_parameters' of type Dict[str, Any]"
+    },
+    "StrategyEvaluator": {
+        "description": "Evaluates the performance of a trading strategy using provided parameters and historical data.",
+        "interface": "strategy_evaluator(strategy_parameters: Dict[str, Any], trading_data: Any) -> dict with key 'performance_metrics' of type Dict[str, float], 'analysis' of type str"
+    },
+    "BacktestResult": {
+        "description": "Captures the results of backtesting a trading strategy, including key performance metrics.",
+        "interface": "backtest_result(total_return: float, sharpe_ratio: float, max_drawdown: float, win_rate: float, profit_factor: float) -> dict with keys 'total_return' of type float, 'sharpe_ratio' of type float, 'max_drawdown' of type float, 'win_rate' of type float, 'profit_factor' of type float"
+    },
+    "StrategyAdjustment": {
+        "description": "Suggests adjustments to trading strategy parameters based on backtest results to improve effectiveness.",
+        "interface": "strategy_adjustment(backtest_results: Dict[str, float], current_parameters: Dict[str, Any]) -> dict with keys 'adjusted_parameters' of type Dict[str, Any], 'expected_impact' of type Dict[str, Any]"
+    },
+    "NextStepsPlanner": {
+        "description": "Plans the next steps for further optimizing the trading strategy based on recent backtest results and proposed adjustments.",
+        "interface": "next_steps_planner(backtest_results: Dict[str, float], proposed_adjustments: Dict[str, Any]) -> dict with keys 'plan' of type List[str], 'timelines' of type Dict[str, str], 'additional_analyses' of type List[str], 'recommended_tools' of type List[str]"
+    }
+}
