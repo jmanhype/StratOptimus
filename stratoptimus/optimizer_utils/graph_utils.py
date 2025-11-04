@@ -1,7 +1,8 @@
+"""Graph utilities for workflow optimization and management."""
 import os
 import re
 import json
-from typing import List
+from typing import List, Dict, Any, Optional
 import traceback
 import time
 from metagpt.logs import logger
@@ -45,10 +46,13 @@ class GraphUtils:
             with open(graph_file_path, "r", encoding="utf-8") as file:
                 graph_content = file.read()
         except FileNotFoundError as e:
-            logger.info(f"Error: File not found for round {round_number}: {e}")
+            logger.error(f"File not found for round {round_number}: {e}")
+            raise
+        except IOError as e:
+            logger.error(f"IO error reading files for round {round_number}: {e}")
             raise
         except Exception as e:
-            logger.info(f"Error loading prompt for round {round_number}: {e}")
+            logger.error(f"Unexpected error loading files for round {round_number}: {e}")
             raise
         return prompt_content, graph_content
 
@@ -81,7 +85,13 @@ class GraphUtils:
         graph_system = WORKFLOW_OPTIMIZE_PROMPT.format(type=type)
         return graph_input + WORKFLOW_CUSTOM_USE + graph_system
 
-    async def get_graph_optimize_response(self, graph_optimize_node):
+    async def get_graph_optimize_response(self, graph_optimize_node) -> Optional[Dict[str, Any]]:
+        """
+        Get optimized graph response with retry logic.
+
+        :param graph_optimize_node: Node containing optimization instructions.
+        :return: Response dictionary or None if all retries fail.
+        """
         max_retries = 5
         retries = 0
 
@@ -89,13 +99,20 @@ class GraphUtils:
             try:
                 response = graph_optimize_node.instruct_content.model_dump()
                 return response
-            except Exception as e:
+            except AttributeError as e:
+                logger.error(f"Attribute error in graph optimization: {e}. Retrying... ({retries + 1}/{max_retries})")
                 retries += 1
-                logger.info(f"Error generating prediction: {e}. Retrying... ({retries}/{max_retries})")
                 if retries == max_retries:
-                    logger.info("Maximum retries reached. Skipping this sample.")
-                    break
-                traceback.print_exc()
+                    logger.error("Maximum retries reached. Returning None.")
+                    return None
+                time.sleep(5)
+            except Exception as e:
+                logger.error(f"Unexpected error generating prediction: {e}. Retrying... ({retries + 1}/{max_retries})")
+                retries += 1
+                if retries == max_retries:
+                    logger.error("Maximum retries reached. Returning None.")
+                    traceback.print_exc()
+                    return None
                 time.sleep(5)
         return None
 
