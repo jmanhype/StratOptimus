@@ -1,9 +1,11 @@
+"""Data utilities for managing optimization results and round selection."""
 import json
 import os
 import random
 import datetime
 import numpy as np
 import pandas as pd
+from typing import List, Dict, Any, Optional
 from metagpt.logs import logger
 
 
@@ -12,17 +14,24 @@ class DataUtils:
         self.root_path = root_path
         self.top_scores = []
 
-    def load_results(self, path: str) -> list:
+    def load_results(self, path: str) -> List[Dict[str, Any]]:
+        """
+        Load results from a JSON file.
+
+        :param path: Directory containing results.json file.
+        :return: List of result dictionaries.
+        """
         result_path = os.path.join(path, "results.json")
         if os.path.exists(result_path):
-            with open(result_path, 'r') as json_file:
+            with open(result_path, 'r', encoding='utf-8') as json_file:
                 try:
                     return json.load(json_file)
-                except json.JSONDecodeError:
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Failed to decode JSON from {result_path}: {e}")
                     return []
         return []
 
-    def get_top_rounds(self, sample: int, path=None, mode="Graph"):
+    def get_top_rounds(self, sample: int, path: Optional[str] = None, mode: str = "Graph") -> List[Dict[str, Any]]:
         self._load_scores(path, mode)
         unique_rounds = set()
         unique_top_scores = []
@@ -42,7 +51,14 @@ class DataUtils:
 
         return unique_top_scores
 
-    def select_round(self, items):
+    def select_round(self, items: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Select a round based on weighted probability distribution.
+
+        :param items: List of items with 'score' field.
+        :return: Selected item dictionary.
+        :raises ValueError: If items list is empty.
+        """
         if not items:
             raise ValueError("Item list is empty.")
 

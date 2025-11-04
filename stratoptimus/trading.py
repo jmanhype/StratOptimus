@@ -1,7 +1,7 @@
 import asyncio
 import pandas as pd
 import vectorbtpro as vbt
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 
 async def load_data(file_path: str, samples: int = 1, test: bool = False) -> Dict[str, pd.DataFrame]:
     """
@@ -21,10 +21,12 @@ async def load_data(file_path: str, samples: int = 1, test: bool = False) -> Dic
             # Assuming training data is stored with key 'train'
             loaded_data = {'train': data['train'].head(samples)}
         return loaded_data
-    except FileNotFoundError:
-        raise FileNotFoundError(f"The file at {file_path} was not found.")
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"The file at {file_path} was not found.") from e
+    except KeyError as e:
+        raise KeyError(f"Expected key not found in data file {file_path}: {e}") from e
     except Exception as e:
-        raise Exception(f"An error occurred while loading data: {e}")
+        raise RuntimeError(f"An error occurred while loading data from {file_path}: {e}") from e
 
 async def evaluate_problem(problem: Dict[str, Any], graph: Any) -> Tuple[float, float]:
     """
@@ -33,11 +35,16 @@ async def evaluate_problem(problem: Dict[str, Any], graph: Any) -> Tuple[float, 
     :param problem: A dictionary containing problem parameters.
     :param graph: The trading strategy graph or configuration.
     :return: A tuple containing the performance metric and cost.
+    :raises ValueError: If required data fields are missing from problem dict.
+    :raises RuntimeError: If backtest execution fails.
     """
     try:
         # Extract parameters from the problem dictionary
         parameters = problem.get('parameters', {})
-        price_data = problem.get('price_data')  # Assuming 'price_data' contains price information
+        price_data = problem.get('price_data')
+
+        if price_data is None:
+            raise ValueError("Missing required 'price_data' field in problem dictionary")
 
         # Initialize the strategy using vectorbtpro
         strategy = vbt.Strategy.from_graph(graph)
@@ -49,10 +56,13 @@ async def evaluate_problem(problem: Dict[str, Any], graph: Any) -> Tuple[float, 
         performance = portfolio.total_return()  # Example metric
         cost = portfolio.total_fees  # Example cost metric
 
-        return performance, cost
+        return float(performance), float(cost)
+    except ValueError as e:
+        # Re-raise validation errors
+        raise
     except Exception as e:
+        # Log error and return default metrics for robustness
         print(f"Error evaluating problem: {e}")
-        # Return default metrics in case of failure
         return 0.0, 0.0
 
 async def evaluate_all_problems(
